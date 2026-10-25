@@ -43,3 +43,32 @@ export interface Clarification {
   suggestions: string[]
 }
 
+export interface ActivityPoint { period: string; active_users: number }
+
+export interface ActivityMetrics {
+  start: string
+  end: string
+  data_start: string
+  data_through: string
+  timezone: string
+  daily: ActivityPoint[]
+  weekly: ActivityPoint[]
+  monthly: ActivityPoint[]
+  summary: {
+    latest_dau: number
+    latest_wau: number
+    latest_mau: number
+    dau_mau_ratio: number | null
+    sessions_per_user: number | null
+    average_session_duration_seconds: number | null
+  }
+}
+
+export interface MetricDefinition {
+  key: string
+  name: string
+  description: string
+  formula: string
+  required_fields: string[]
+}
+

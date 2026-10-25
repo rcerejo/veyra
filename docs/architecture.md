@@ -12,3 +12,5 @@ The semantic planner uses lexical schema matching, sampled-value evidence, relat
 
 Failure is an expected state. When Ollama is unavailable, supported deterministic questions remain functional. Unsupported questions return a clarification response rather than invented SQL or data.
 
+Product metrics use a separate deterministic path. Each definition names its formula and required fields, and the activity service emits DAU, WAU, and MAU on UTC calendar boundaries plus windowed session metrics. An uploaded database that lacks the canonical product fields receives a compatibility error; VEYRA does not ask a model to invent mappings for trusted metrics.
+

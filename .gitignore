@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 backend/tests/.tmp-*/
+backend/.test-tmp-*/
 .coverage
 frontend/node_modules/
 frontend/dist/

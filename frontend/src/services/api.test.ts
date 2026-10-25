@@ -28,4 +28,11 @@ describe('API client', () => {
       method: 'POST', body: file,
     }))
   })
+
+  it('encodes the selected activity date window', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) })
+    vi.stubGlobal('fetch', fetchMock)
+    await api.activityMetrics('2026-03-01', '2026-03-31')
+    expect(fetchMock).toHaveBeenCalledWith('/api/metrics/activity?start=2026-03-01&end=2026-03-31', undefined)
+  })
 })

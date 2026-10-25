@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
@@ -8,12 +9,18 @@ from app.core.config import Settings, get_settings
 from app.database.schema import SchemaCatalog
 from app.database.sqlite import QueryTimeoutError, SQLiteAdapter
 from app.database.registry import DatabaseRegistry, DatabaseRegistryError, MAX_DATABASE_BYTES
+from app.metrics.activity import ACTIVITY_DEFINITIONS, ActivityMetricService, MetricSchemaError
 from app.query_engine.service import QueryService
 from app.query_engine.validator import UnsafeQueryError
 from app.schemas.query import ClarificationResponse, QueryRequest, QueryResponse
 from app.schemas.database import DatabaseInfo, DatabaseList, DatabaseSelection
+from app.schemas.metrics import ActivityMetrics, MetricDefinition
 
 router = APIRouter(prefix="/api")
+
+
+def _active_adapter(settings: Settings) -> SQLiteAdapter:
+    return SQLiteAdapter(DatabaseRegistry(settings.database_path).active_path())
 
 
 @router.get("/health")
@@ -31,7 +38,7 @@ async def health(settings: Settings = Depends(get_settings)) -> dict:
 @router.get("/schema")
 def schema(settings: Settings = Depends(get_settings)) -> dict:
     try:
-        adapter = SQLiteAdapter(DatabaseRegistry(settings.database_path).active_path())
+        adapter = _active_adapter(settings)
         return SchemaCatalog(adapter.discover_schema(), adapter.profile_values()).as_dict()
     except (FileNotFoundError, OSError) as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -65,6 +72,25 @@ def activate_database(selection: DatabaseSelection, settings: Settings = Depends
     except DatabaseRegistryError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return DatabaseInfo(name=active.relative_to(registry.root).as_posix(), size_bytes=active.stat().st_size, active=True)
+
+
+@router.get("/metrics/definitions", response_model=list[MetricDefinition])
+def metric_definitions() -> tuple[MetricDefinition, ...]:
+    return ACTIVITY_DEFINITIONS
+
+
+@router.get("/metrics/activity", response_model=ActivityMetrics)
+def activity_metrics(
+    start: date | None = None,
+    end: date | None = None,
+    settings: Settings = Depends(get_settings),
+) -> ActivityMetrics:
+    try:
+        return ActivityMetricService(_active_adapter(settings), settings.query_timeout_seconds).calculate(start, end)
+    except (MetricSchemaError, ValueError) as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @router.post("/databases/upload", response_model=DatabaseInfo, status_code=201)

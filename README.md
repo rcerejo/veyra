@@ -2,7 +2,7 @@
 
 **Intelligence Behind Every Decision.**
 
-VEYRA is a local-first product intelligence workspace that turns plain-language questions into explainable, validated queries over a SQLite product database. Phase 1 provides the complete question-to-results foundation: seeded product data, schema discovery, structured planning, optional local Ollama SQL generation, layered query safety, real query results, and a polished React interface.
+VEYRA is a local-first product intelligence workspace that turns plain-language questions into explainable, validated queries over a SQLite product database. The current build includes the complete question-to-results foundation plus the first deterministic product analytics module.
 
 ## What works in Phase 1
 
@@ -17,8 +17,10 @@ VEYRA is a local-first product intelligence workspace that turns plain-language 
 - SQLGlot validation, read-only URI connections, SQLite authorizer, timeout, and row limit
 - Results table, automatic bar chart, SQL inspection/copy, and honest clarification states
 - Backend integration and SQL safety tests
+- Versioned DAU, WAU, MAU, DAU/MAU, sessions-per-user, and session-duration definitions
+- Deterministic activity API and Product Analytics dashboard with auditable formulas
 
-Product metric semantics, experimentation analysis, investigations, ML, and benchmarking are deliberately deferred to their specified later phases.
+Retention, funnels, cohort analysis, experimentation, investigations, ML, and benchmarking remain in later phases.
 
 ## Architecture
 
@@ -29,6 +31,9 @@ React/Vite ──POST /api/query──> FastAPI
                                   ├─ deterministic SQL OR Ollama
                                   ├─ SQLGlot validation
                                   └─ read-only SQLite execution ──> evidence + metadata
+
+Product Analytics ──GET /api/metrics/activity──> deterministic metric registry
+                                                   └─ documented SQL definitions ──> dashboard
 ```
 
 See [architecture](docs/architecture.md) and [database schema](docs/database-schema.md).
@@ -67,6 +72,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\stop-veyra.ps1
 
 Use **Settings** to upload or switch between `.db`, `.sqlite`, and `.sqlite3` databases. Uploads are limited to 100 MB, validated as SQLite files, and kept inside `datasets/uploads`. Schema Explorer displays the active database structure and non-sensitive categorical samples.
 
+**Product Analytics** calculates canonical activity metrics when the active database contains compatible `events` and `sessions` tables. Other uploaded schemas remain fully available in Ask Veyra and Schema Explorer; the dashboard reports the exact fields needed instead of guessing a metric mapping.
+
 ### Optional local model
 
 Install Ollama separately, then run:
@@ -96,6 +103,6 @@ API documentation is available at `http://127.0.0.1:8000/docs` while the backend
 - Deterministic offline language coverage is intentionally small; the schema and sampled values enrich Ollama's generic query context.
 - Phase 1 validates tables but does not yet perform full semantic column lineage for every SQL expression.
 - SQLite is the only database adapter implemented.
-- Timezone normalization, metric definitions, cohort math, and experiments arrive in later phases.
+- Canonical activity metrics currently use UTC calendar periods; configurable timezone normalization, retention, funnel, cohort, and experiment math arrive in later phases.
 - Ollama output quality depends on the locally installed model and machine.
 

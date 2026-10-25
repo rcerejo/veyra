@@ -17,8 +17,10 @@ def database(tmp_path: Path) -> Path:
         connection.executescript("""
             CREATE TABLE users (user_id INTEGER PRIMARY KEY, signup_date TEXT NOT NULL, acquisition_channel TEXT, country TEXT, device_type TEXT);
             CREATE TABLE events (event_id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(user_id), event_type TEXT, event_timestamp TEXT, session_id INTEGER);
+            CREATE TABLE sessions (session_id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(user_id), session_start TEXT NOT NULL, session_end TEXT);
             INSERT INTO users VALUES (1, '2026-01-01', 'organic', 'US', 'mobile'), (2, '2026-01-02', 'paid', 'CA', 'desktop');
-            INSERT INTO events VALUES (1, 1, 'app_open', '2026-01-03T10:00:00', 1), (2, 2, 'app_open', '2026-01-03T11:00:00', 2);
+            INSERT INTO events VALUES (1, 1, 'app_open', '2026-01-03T10:00:00', 1), (2, 2, 'app_open', '2026-01-03T11:00:00', 2), (3, 1, 'app_open', '2026-01-04T10:00:00', 3);
+            INSERT INTO sessions VALUES (1, 1, '2026-01-03T10:00:00', '2026-01-03T10:10:00'), (2, 2, '2026-01-03T11:00:00', '2026-01-03T11:20:00'), (3, 1, '2026-01-04T10:00:00', '2026-01-04T10:30:00');
         """)
     return path
 
