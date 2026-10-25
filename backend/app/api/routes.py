@@ -19,8 +19,17 @@ from app.metrics.retention import retention
 from app.metrics.funnel import FunnelRequest, funnel
 from app.metrics.experiments import experiments
 from app.metrics.statistics import power_plan
+from app.metrics.investigations import InvestigationRequest, investigate
 
 router = APIRouter(prefix="/api")
+
+
+@router.post('/investigations')
+def investigation(request: InvestigationRequest, settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return investigate(_active_adapter(settings), request)
+    except MetricSchemaError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @router.get('/experiments/power')
