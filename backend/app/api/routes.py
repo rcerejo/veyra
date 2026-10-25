@@ -15,8 +15,44 @@ from app.query_engine.validator import UnsafeQueryError
 from app.schemas.query import ClarificationResponse, QueryRequest, QueryResponse
 from app.schemas.database import DatabaseInfo, DatabaseList, DatabaseSelection
 from app.schemas.metrics import ActivityMetrics, MetricDefinition
+from app.metrics.retention import retention
+from app.metrics.funnel import FunnelRequest, funnel
+from app.metrics.experiments import experiments
+from app.metrics.statistics import power_plan
 
 router = APIRouter(prefix="/api")
+
+
+@router.get('/experiments/power')
+def experiment_power(baseline: float = Query(gt=0, lt=1), effect: float = Query(gt=0, lt=1), per_arm: int = Query(ge=2), target: float = Query(default=.8, gt=.5, lt=1)) -> dict:
+    try:
+        return power_plan(baseline, effect, per_arm, target)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/experiments")
+def experiment_analysis(expected_treatment_share: float | None = Query(default=None, gt=0, lt=1), conversion_event: str = Query(default='purchase', min_length=1, max_length=100), window_days: int = Query(default=7, ge=1, le=90), settings: Settings = Depends(get_settings)) -> list[dict]:
+    try:
+        return experiments(_active_adapter(settings), expected_treatment_share, conversion_event, window_days)
+    except MetricSchemaError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.post("/metrics/funnel")
+def funnel_metrics(request: FunnelRequest, settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return funnel(_active_adapter(settings), request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@router.get("/metrics/retention")
+def retention_metrics(settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return retention(_active_adapter(settings))
+    except MetricSchemaError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 def _active_adapter(settings: Settings) -> SQLiteAdapter:

@@ -3,6 +3,8 @@ import ReactECharts from 'echarts-for-react'
 import { Activity, CalendarDays, Clock3, Gauge, UsersRound } from 'lucide-react'
 import { api } from '../services/api'
 import type { ActivityMetrics, MetricDefinition } from '../types/api'
+import { RetentionCohorts } from '../components/RetentionCohorts'
+import { ConversionFunnel } from '../components/ConversionFunnel'
 
 export function ProductAnalytics() {
   const [metrics, setMetrics] = useState<ActivityMetrics | null>(null)
@@ -58,6 +60,8 @@ export function ProductAnalytics() {
 
     {error && <div role="alert" className="mt-7 rounded-xl border border-amber-400/20 bg-amber-400/[0.06] p-4 text-sm text-amber-100"><div className="font-medium">This database is not ready for canonical activity metrics.</div><div className="mt-1 text-amber-100/70">{error}</div></div>}
     {loading && !metrics && <div className="mt-8 h-64 animate-pulse rounded-2xl bg-white/[0.025]"/>}
+    <RetentionCohorts/>
+    <ConversionFunnel/>
     {metrics && <>
       <div className="mt-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{cards.map(card => <div key={card.label} className="rounded-2xl border border-white/[0.08] bg-panel p-5"><div className="flex items-center justify-between text-sm text-slate-500"><span>{card.label}</span><span className="text-accent">{card.icon}</span></div><div className="mt-3 text-3xl font-semibold tracking-tight text-slate-50">{card.value}</div><div className="mt-2 text-xs text-slate-600">{card.note}</div></div>)}</div>
       <section className="mt-5 rounded-2xl border border-white/[0.08] bg-panel p-5"><div className="flex flex-wrap items-end justify-between gap-3"><div><h2 className="font-medium">Daily active users</h2><p className="mt-1 text-xs text-slate-500">Distinct users with at least one event per UTC day</p></div><span className="text-xs text-slate-600">Data available {metrics.data_start} → {metrics.data_through}</span></div><ReactECharts option={chart} style={{height: 330}}/></section>
