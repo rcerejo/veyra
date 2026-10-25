@@ -11,6 +11,9 @@ VEYRA is a local-first product intelligence workspace that turns plain-language 
 - Safe local SQLite upload, validation, selection, and persistent workspace activation
 - Pydantic-validated query plans and API responses
 - Deterministic offline questions plus schema-aware Ollama generation for broader questions
+- Generic schema-derived planning for entity counts, record lookup, sampled-value filters, date windows, grouping, and explicit foreign-key joins
+- Targeted clarification for ambiguous tables, missing date fields, and unsupported joins
+- Column-level SQL validation and at most two model correction attempts
 - SQLGlot validation, read-only URI connections, SQLite authorizer, timeout, and row limit
 - Results table, automatic bar chart, SQL inspection/copy, and honest clarification states
 - Backend integration and SQL safety tests

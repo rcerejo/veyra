@@ -19,11 +19,12 @@ class QueryPlan(BaseModel):
 
 
 class QueryMetadata(BaseModel):
-    source: Literal["deterministic", "ollama"]
+    source: Literal["deterministic", "semantic", "ollama"]
     duration_ms: float
     row_count: int
     truncated: bool
     model: str | None = None
+    correction_attempts: int = 0
 
 
 class QueryResponse(BaseModel):

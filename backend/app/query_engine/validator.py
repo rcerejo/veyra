@@ -28,5 +28,24 @@ def validate_sql(sql: str, catalog: SchemaCatalog) -> str:
     unknown = sorted(referenced_tables - set(catalog.tables))
     if unknown:
         raise UnsafeQueryError(f"Unknown table(s): {', '.join(unknown)}")
+
+    aliases = {table.alias_or_name: table.name for table in statement.find_all(exp.Table)}
+    known_columns = {
+        table_name: {column.name for column in catalog.tables[table_name].columns}
+        for table_name in referenced_tables
+    }
+    all_columns = set().union(*known_columns.values()) if known_columns else set()
+    select_aliases = {alias.alias for alias in statement.find_all(exp.Alias) if alias.alias}
+    for column in statement.find_all(exp.Column):
+        if column.is_star:
+            continue
+        if column.table:
+            table_name = aliases.get(column.table, column.table)
+            if table_name in known_columns and column.name not in known_columns[table_name]:
+                raise UnsafeQueryError(f"Unknown column: {table_name}.{column.name}")
+        elif column.name not in all_columns and column.name not in select_aliases:
+            # Derived CTE columns are validated by SQLite's read-only execution boundary.
+            if not cte_names:
+                raise UnsafeQueryError(f"Unknown column: {column.name}")
     return statement.sql(dialect="sqlite")
 

@@ -8,5 +8,7 @@ The database registry confines selectable files to the local `datasets` director
 
 Schema profiling samples only bounded values from likely categorical text columns. Columns with names indicating credentials or personal information are excluded. These samples help the local model connect phrases such as “opened the app” to stored values such as `app_open` without turning the LLM into an execution authority.
 
+The semantic planner uses lexical schema matching, sampled-value evidence, relative or explicit calendar windows, and explicit foreign keys to compile common lookups and aggregations without a model. Ambiguous matches produce focused clarification options. Questions outside deterministic coverage can use Ollama; generated SQL is checked for statement type, tables, and columns, and rejected SQL receives at most two bounded correction attempts before the request fails safely.
+
 Failure is an expected state. When Ollama is unavailable, supported deterministic questions remain functional. Unsupported questions return a clarification response rather than invented SQL or data.
 

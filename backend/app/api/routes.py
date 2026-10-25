@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import sqlite3
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 
 from app.core.config import Settings, get_settings
 from app.database.schema import SchemaCatalog
-from app.database.sqlite import SQLiteAdapter
+from app.database.sqlite import QueryTimeoutError, SQLiteAdapter
 from app.database.registry import DatabaseRegistry, DatabaseRegistryError, MAX_DATABASE_BYTES
 from app.query_engine.service import QueryService
 from app.query_engine.validator import UnsafeQueryError
@@ -43,6 +45,10 @@ async def query(request: QueryRequest, settings: Settings = Depends(get_settings
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except UnsafeQueryError as exc:
         raise HTTPException(status_code=422, detail=f"Generated query was rejected: {exc}") from exc
+    except sqlite3.Error as exc:
+        raise HTTPException(status_code=422, detail=f"Query execution failed: {exc}") from exc
+    except QueryTimeoutError as exc:
+        raise HTTPException(status_code=408, detail=str(exc)) from exc
 
 
 @router.get("/databases", response_model=DatabaseList)
