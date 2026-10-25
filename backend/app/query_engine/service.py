@@ -6,6 +6,7 @@ from app.ai.ollama import OllamaClient
 from app.core.config import Settings
 from app.database.schema import SchemaCatalog
 from app.database.sqlite import SQLiteAdapter
+from app.database.registry import DatabaseRegistry
 from app.query_engine.planner import deterministic_sql, plan_question
 from app.query_engine.validator import validate_sql
 from app.schemas.query import ClarificationResponse, QueryMetadata, QueryRequest, QueryResponse
@@ -14,12 +15,12 @@ from app.schemas.query import ClarificationResponse, QueryMetadata, QueryRequest
 class QueryService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.adapter = SQLiteAdapter(settings.database_path)
+        self.adapter = SQLiteAdapter(DatabaseRegistry(settings.database_path).active_path())
         self.ollama = OllamaClient(settings.ollama_url, settings.ollama_model)
 
     async def ask(self, request: QueryRequest) -> QueryResponse | ClarificationResponse:
         started = time.perf_counter()
-        catalog = SchemaCatalog(self.adapter.discover_schema())
+        catalog = SchemaCatalog(self.adapter.discover_schema(), self.adapter.profile_values())
         plan = plan_question(request.question)
         sql = deterministic_sql(request.question)
         source = "deterministic"

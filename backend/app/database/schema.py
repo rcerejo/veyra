@@ -6,8 +6,9 @@ from app.database.adapter import TableInfo
 
 
 class SchemaCatalog:
-    def __init__(self, tables: tuple[TableInfo, ...]) -> None:
+    def __init__(self, tables: tuple[TableInfo, ...], samples: dict[str, dict[str, list]] | None = None) -> None:
         self.tables = {table.name: table for table in tables}
+        self.samples = samples or {}
 
     def as_dict(self) -> dict:
         return {
@@ -16,6 +17,7 @@ class SchemaCatalog:
                     "name": table.name,
                     "columns": [column.__dict__ for column in table.columns],
                     "foreign_keys": [key.__dict__ for key in table.foreign_keys],
+                    "sample_values": self.samples.get(table.name, {}),
                 }
                 for table in self.tables.values()
             ]
@@ -31,6 +33,9 @@ class SchemaCatalog:
             columns = ", ".join(f"{c.name} {c.data_type}{' PRIMARY KEY' if c.primary_key else ''}" for c in table.columns)
             lines.append(f"{table.name}({columns})")
             lines.extend(f"FK {table.name}.{fk.column} -> {fk.target_table}.{fk.target_column}" for fk in table.foreign_keys)
+            for column, values in self.samples.get(table.name, {}).items():
+                rendered = ", ".join(repr(value) for value in values)
+                lines.append(f"VALUES {table.name}.{column}: {rendered}")
         return "\n".join(lines)
 
     def join_path(self, start: str, target: str) -> list[str] | None:

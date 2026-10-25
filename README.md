@@ -7,7 +7,8 @@ VEYRA is a local-first product intelligence workspace that turns plain-language 
 ## What works in Phase 1
 
 - Reproducible synthetic users, sessions, events, orders, and experiment assignments
-- SQLite table, column, key, and relationship discovery
+- SQLite table, column, key, relationship, and bounded categorical-value discovery
+- Safe local SQLite upload, validation, selection, and persistent workspace activation
 - Pydantic-validated query plans and API responses
 - Deterministic offline questions plus schema-aware Ollama generation for broader questions
 - SQLGlot validation, read-only URI connections, SQLite authorizer, timeout, and row limit
@@ -52,6 +53,17 @@ npm run dev
 
 Open `http://localhost:5173`. The deterministic examples work without Ollama.
 
+### One-command startup
+
+After completing setup once, start and stop both services with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-veyra.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\stop-veyra.ps1
+```
+
+Use **Settings** to upload or switch between `.db`, `.sqlite`, and `.sqlite3` databases. Uploads are limited to 100 MB, validated as SQLite files, and kept inside `datasets/uploads`. Schema Explorer displays the active database structure and non-sensitive categorical samples.
+
 ### Optional local model
 
 Install Ollama separately, then run:
@@ -78,7 +90,7 @@ API documentation is available at `http://127.0.0.1:8000/docs` while the backend
 
 ## Known limitations
 
-- Deterministic offline language coverage is intentionally small; Ollama expands coverage.
+- Deterministic offline language coverage is intentionally small; the schema and sampled values enrich Ollama's generic query context.
 - Phase 1 validates tables but does not yet perform full semantic column lineage for every SQL expression.
 - SQLite is the only database adapter implemented.
 - Timezone normalization, metric definitions, cohort math, and experiments arrive in later phases.

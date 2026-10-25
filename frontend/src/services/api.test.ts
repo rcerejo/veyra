@@ -15,4 +15,17 @@ describe('API client', () => {
       method: 'POST', body: JSON.stringify({ question: 'why?' }),
     }))
   })
+
+  it('uploads a SQLite file as an opaque binary body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ name: 'uploads/example.db', size_bytes: 16, active: true }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const file = new File([new Uint8Array(16)], 'example.db')
+    await api.uploadDatabase(file)
+    expect(fetchMock).toHaveBeenCalledWith('/api/databases/upload?filename=example.db', expect.objectContaining({
+      method: 'POST', body: file,
+    }))
+  })
 })

@@ -47,6 +47,43 @@ class SQLiteAdapter(DatabaseAdapter):
                 tables.append(TableInfo(name, columns, foreign_keys))
             return tuple(tables)
 
+    def profile_values(self, sample_limit: int = 5, max_columns: int = 60) -> dict[str, dict[str, list[Any]]]:
+        """Return bounded, non-sensitive examples for likely categorical columns."""
+        profiles: dict[str, dict[str, list[Any]]] = {}
+        inspected = 0
+        sensitive_terms = ("email", "name", "address", "phone", "token", "password", "secret", "key")
+        categorical_terms = ("type", "status", "category", "channel", "country", "device", "variant", "plan", "tier", "action")
+        with self._connect() as connection:
+            for table in self.discover_schema():
+                table_profile: dict[str, list[Any]] = {}
+                for column in table.columns:
+                    if inspected >= max_columns:
+                        break
+                    lowered = column.name.casefold()
+                    data_type = column.data_type.casefold()
+                    is_text = any(token in data_type for token in ("char", "text", "clob"))
+                    if not is_text or any(term in lowered for term in sensitive_terms):
+                        continue
+                    if not any(term in lowered for term in categorical_terms):
+                        continue
+                    inspected += 1
+                    quoted_table = table.name.replace('"', '""')
+                    quoted_column = column.name.replace('"', '""')
+                    sql = (
+                        f'SELECT "{quoted_column}", COUNT(*) AS frequency FROM "{quoted_table}" '
+                        f'WHERE "{quoted_column}" IS NOT NULL GROUP BY "{quoted_column}" '
+                        f'ORDER BY frequency DESC, "{quoted_column}" LIMIT ?'
+                    )
+                    values = [
+                        row[0][:80] if isinstance(row[0], str) else row[0]
+                        for row in connection.execute(sql, (sample_limit,))
+                    ]
+                    if values:
+                        table_profile[column.name] = values
+                if table_profile:
+                    profiles[table.name] = table_profile
+        return profiles
+
     def execute_readonly(self, sql: str, row_limit: int, timeout_seconds: float) -> tuple[list[str], list[dict[str, Any]], bool]:
         started = time.monotonic()
         denied = {
