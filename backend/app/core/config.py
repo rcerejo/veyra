@@ -4,7 +4,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, model_validator, field_validator
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     max_concurrent_requests: int = Field(default=4,ge=1,le=64)
     enable_admin_jobs: bool = False
 
+    @field_validator('database_path',mode='before')
+    @classmethod
+    def resolve_database_path(cls,value):
+        path=Path(value)
+        return path if path.is_absolute() else Path(__file__).resolve().parents[3]/path
+
     @model_validator(mode='after')
     def production_configuration(self):
         if self.environment == 'production':
@@ -36,7 +42,7 @@ class Settings(BaseSettings):
                 raise ValueError('Production CORS origins must use HTTPS (or set an empty list for same-origin deployment)')
         return self
 
-    model_config = SettingsConfigDict(env_prefix="VEYRA_", env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_prefix="VEYRA_", env_file=Path(__file__).resolve().parents[3]/'.env', extra="ignore")
 
 
 @lru_cache

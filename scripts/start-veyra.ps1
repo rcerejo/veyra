@@ -3,9 +3,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $python = Join-Path $projectRoot '.venv\Scripts\python.exe'
 $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
-$node = if ($nodeCommand) { $nodeCommand.Source } else {
-    Join-Path $env:USERPROFILE '.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe'
-}
+if (-not $nodeCommand) { throw 'Install Node.js 24 LTS, reopen PowerShell, and verify node --version. See README.md.' }
+$node = $nodeCommand.Source
 $vite = Join-Path $projectRoot 'frontend\node_modules\vite\bin\vite.js'
 $logs = Join-Path $projectRoot 'logs'
 $runtimeFile = Join-Path $projectRoot '.veyra-runtime.json'
@@ -34,7 +33,7 @@ $frontendListener = Get-NetTCPConnection -LocalPort 5173 -State Listen -ErrorAct
 if ($frontendListener) {
     $frontendPid = $frontendListener.OwningProcess
 } else {
-    $frontendProcess = Start-Process -FilePath $node -ArgumentList $vite, '--host', '127.0.0.1', '--port', '5173' `
+    $frontendProcess = Start-Process -FilePath $node -ArgumentList ('"' + $vite + '"'), '--host', '127.0.0.1', '--port', '5173', '--strictPort' `
         -WorkingDirectory (Join-Path $projectRoot 'frontend') -WindowStyle Hidden -PassThru `
         -RedirectStandardOutput (Join-Path $logs 'frontend.out.log') `
         -RedirectStandardError (Join-Path $logs 'frontend.err.log')
