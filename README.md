@@ -4,7 +4,7 @@
 
 VEYRA is a local-first product intelligence workspace that turns plain-language questions into explainable, validated queries over a SQLite product database. The current build includes the complete question-to-results foundation plus the first deterministic product analytics module.
 
-## What works in Phase 1
+## Implemented functionality
 
 - Reproducible synthetic users, sessions, events, orders, and experiment assignments
 - SQLite table, column, key, relationship, and bounded categorical-value discovery
@@ -20,7 +20,13 @@ VEYRA is a local-first product intelligence workspace that turns plain-language 
 - Versioned DAU, WAU, MAU, DAU/MAU, sessions-per-user, and session-duration definitions
 - Deterministic activity API and Product Analytics dashboard with auditable formulas
 
-Retention, funnels, cohort analysis, experimentation, investigations, ML, and benchmarking remain in later phases.
+- Exact-day signup retention, ordered funnels, conversion investigations and experiment comparisons
+- Experiment planning, sample-ratio checks and session-engagement guardrails
+- Growth/revenue summaries and local predictive-model evaluation
+- Measured fifty-case query benchmark with optional Ollama baselines
+- CSV results export
+
+See [release status](docs/release-status.md) for the implemented scope and remaining master-outline work. This repository is a working prototype; broad schema portability, advanced evaluation coverage, and production hardening remain.
 
 ## Architecture
 

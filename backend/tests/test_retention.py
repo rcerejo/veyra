@@ -6,3 +6,8 @@ def test_exact_day_retention_and_immature_cohorts(client):
     assert cohorts[1]['cells'][0]['rate'] == 1
     assert cohorts[0]['cells'][1]['rate'] is None
     assert cohorts[0]['cells'][1]['eligible_users'] == 0
+    body=response.json()
+    assert body['weekly_retention']==[]
+    assert body['activation']['eligible_users']==0
+    assert body['activation']['rate'] is None
+    assert body['churn']['rate'] is None

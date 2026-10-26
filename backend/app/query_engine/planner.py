@@ -73,6 +73,22 @@ def plan_question(question: str) -> QueryPlan:
 
 def deterministic_sql(question: str) -> str | None:
     text = question.casefold().strip(" ?.!")
+    retention_day = re.search(r'\bday\s*(1|7|30)\s+(?:signup\s+)?retention\b',text)
+    if retention_day:
+        day=int(retention_day.group(1))
+        return f"""SELECT SUM(CASE WHEN EXISTS (SELECT 1 FROM events e WHERE e.user_id=u.user_id AND DATE(e.event_timestamp)=DATE(u.signup_date,'+{day} days')) THEN 1 ELSE 0 END)*1.0/NULLIF(COUNT(*),0) AS retention_rate FROM users u WHERE DATE(u.signup_date,'+{day} days') <= (SELECT MAX(DATE(event_timestamp)) FROM events)"""
+    if 'active user' in text and 'purchase conversion' in text:
+        return "SELECT COUNT(DISTINCT CASE WHEN event_type='purchase' THEN user_id END)*1.0/NULLIF(COUNT(DISTINCT user_id),0) AS conversion_rate FROM events"
+    if 'signup cohort' in text and 'revenue' not in text and 'month' in text:
+        return "SELECT strftime('%Y-%m',signup_date) AS cohort, COUNT(*) AS users FROM users GROUP BY cohort ORDER BY cohort"
+    if 'experiment assignment' in text and 'variant' in text:
+        return "SELECT experiment_id,variant,COUNT(*) AS users FROM experiment_assignments GROUP BY experiment_id,variant"
+    if 'revenue' in text and ' by ' in text:
+        dimension = next((column for phrase,column in [('country','country'),('device','device_type'),('channel','acquisition_channel'),('signup cohort',"strftime('%Y-%m',u.signup_date)")] if phrase in text),None)
+        if dimension:
+            expression=dimension if '(' in dimension else 'u.'+dimension
+            aggregate='AVG' if 'average' in text else 'SUM'
+            return f'SELECT {expression} AS segment, {aggregate}(o.revenue) AS revenue FROM orders o JOIN users u ON u.user_id=o.user_id GROUP BY segment'
     month_window = _month_window(text)
     if month_window:
         start, end, _ = month_window
@@ -123,9 +139,9 @@ def deterministic_sql(question: str) -> str | None:
                 LEFT JOIN order_counts USING (day)
                 ORDER BY days.day
             """
-    if ("how many" in text or "count" in text) and "user" in text:
+    if ("how many" in text or re.search(r'\bcount\b',text)) and "user" in text:
         return "SELECT COUNT(*) AS user_count FROM users"
-    if ("how many" in text or "count" in text) and "order" in text:
+    if ("how many" in text or re.search(r'\bcount\b',text)) and "order" in text:
         return "SELECT COUNT(*) AS order_count FROM orders"
     if "revenue" in text and any(word in text for word in ("total", "how much", "overall")):
         return "SELECT ROUND(SUM(revenue), 2) AS total_revenue FROM orders"

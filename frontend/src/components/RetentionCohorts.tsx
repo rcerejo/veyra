@@ -3,6 +3,12 @@ import { useEffect, useState } from 'react'
 interface RetentionData {
   definition: string
   data_through: string
+  rolling_retention: {day:number;rate:number|null;eligible_users:number}[]
+  weekly_retention: {cohort:string;week:number;eligible_users:number;rate:number}[]
+  activation: {rate:number|null;eligible_users:number}
+  churn: {rate:number|null;eligible_users:number}
+  activation_definition: string
+  churn_definition: string
   cohorts: { cohort: string; users: number; cells: { day: number; eligible_users: number; retained_users: number | null; rate: number | null }[] }[]
 }
 
@@ -18,6 +24,7 @@ export function RetentionCohorts() {
   }, [])
   return <section className="mt-5 rounded-2xl border border-white/10 bg-panel p-5">
     <h2 className="font-medium">Signup cohort retention</h2>
+    {data && <div className="my-4 space-y-3 text-xs text-slate-400"><p>Activation: {data.activation.rate==null?'—':`${(data.activation.rate*100).toFixed(1)}%`} · {data.activation.eligible_users} eligible users. {data.activation_definition}</p><p>Inactivity churn: {data.churn.rate==null?'—':`${(data.churn.rate*100).toFixed(1)}%`} · {data.churn.eligible_users} eligible users. {data.churn_definition}</p><p>Rolling retention: {data.rolling_retention.map(cell=>`Day ${cell.day}: ${cell.rate==null?'—':(cell.rate*100).toFixed(1)+'%'}`).join(' · ')}. Return on or after day N through the observation cutoff; follow-up lengths vary.</p><details><summary className="cursor-pointer text-accent">Complete observation week retention</summary><p className="mt-2">Seven-day age bins, grouped by Monday signup cohort. Each cell includes only users with the full age week observed. Denominators may vary by week.</p><div className="mt-3 max-h-72 overflow-auto"><table className="w-full text-left"><thead><tr><th>Cohort</th><th>Age week</th><th>Eligible users</th><th>Retained</th></tr></thead><tbody>{data.weekly_retention.map(cell=><tr key={`${cell.cohort}-${cell.week}`} className="border-t border-white/5"><td className="p-2">{cell.cohort}</td><td>{cell.week}</td><td>{cell.eligible_users}</td><td>{(cell.rate*100).toFixed(1)}%</td></tr>)}</tbody></table></div></details></div>}
     {error && <p role="alert" className="mt-3 text-sm text-amber-200">{error}</p>}
     {!data && !error && <p className="mt-3 text-sm text-slate-500">Loading retention…</p>}
     {data && <><p className="mt-2 text-xs leading-5 text-slate-400">{data.definition}</p><p className="mt-2 text-xs text-slate-500">All signup cohorts · observed through {data.data_through} · — means insufficient follow-up</p>

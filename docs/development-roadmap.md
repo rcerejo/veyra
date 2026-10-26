@@ -1,11 +1,11 @@
 # Development roadmap
 
-1. **Foundation (current):** real NL question flow, schema discovery, safe SQLite execution, seeded data, offline behavior, and UI.
-2. **Product analytics:** documented semantic metrics, activity, retention, funnels, engagement, and charts.
-3. **Experimentation:** assignment diagnostics, effects, intervals, tests, power, and guardrails.
-4. **Investigations:** period comparison, composition-aware segmentation, ranked contributions, and evidence links.
-5. **Advanced intelligence:** correction loop, richer join planning, schema graph, ML, and evaluation dashboard.
-6. **Portfolio polish:** full benchmark runs, end-to-end tests, refinements, and demo walkthrough.
+1. **Implemented foundation:** real NL question flow, schema discovery, safe SQLite execution, seeded data and offline behavior.
+2. **Implemented analytics:** activity, exact-day and rolling retention, ordered funnels, growth/revenue and engagement.
+3. **Implemented initial experimentation:** assignment diagnostics, binary effects, intervals, tests, planning and session guardrails.
+4. **Implemented conversion investigations:** period comparison, composition-aware segmentation and ranked evidence.
+5. **Implemented initial predictive/evaluation modules:** churn holdout models, clustering and fifty-case query benchmark.
+6. **Remaining release work:** broader schema mapping, advanced benchmark coverage, general KPI investigations, automated browser regression and production hardening. See release-status.md for explicit boundaries.
 
 Each phase must add verified computation before presenting the corresponding UI as operational.
 

@@ -19,9 +19,41 @@ from app.metrics.retention import retention
 from app.metrics.funnel import FunnelRequest, funnel
 from app.metrics.experiments import experiments
 from app.metrics.statistics import power_plan
-from app.metrics.investigations import InvestigationRequest, investigate
+from app.metrics.investigations import InvestigationRequest, InvestigationQuestion, investigate, investigate_question
+from app.metrics.growth import growth
+from app.metrics.prediction import predict
+from app.metrics.evaluation import evaluate
 
 router = APIRouter(prefix="/api")
+
+
+@router.post('/investigations/ask')
+def investigation_question(request: InvestigationQuestion,settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return investigate_question(_active_adapter(settings),request.question)
+    except MetricSchemaError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+@router.post('/evaluation')
+async def evaluation(include_models: bool = False, settings: Settings = Depends(get_settings)) -> dict:
+    return await evaluate(settings,include_models)
+
+
+@router.post('/prediction')
+def prediction(settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return predict(_active_adapter(settings))
+    except MetricSchemaError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+@router.get('/metrics/growth')
+def growth_metrics(start: date, end: date, settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return growth(_active_adapter(settings),start,end)
+    except MetricSchemaError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
 
 
 @router.post('/investigations')

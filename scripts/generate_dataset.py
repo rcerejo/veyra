@@ -62,6 +62,7 @@ def generate(path: Path, users_count: int = 1200) -> None:
             country = rng.choices(countries, weights=[46, 14, 15, 13, 12])[0]
             device = rng.choices(devices, weights=[62, 32, 6])[0]
             db.execute("INSERT INTO users VALUES (?, ?, ?, ?, ?)", (user_id, signup.date().isoformat(), channel, country, device))
+            variant = 'unassigned'
             if datetime(2026, 1, 15, tzinfo=timezone.utc) <= signup <= datetime(2026, 3, 15, tzinfo=timezone.utc):
                 variant = "treatment" if rng.random() < 0.5 else "control"
                 db.execute("INSERT INTO experiment_assignments VALUES (1, ?, ?, ?)", (user_id, variant, signup.isoformat()))
@@ -72,7 +73,8 @@ def generate(path: Path, users_count: int = 1200) -> None:
                     break
                 duration = max(45, int(rng.lognormvariate(5.1, 0.65)))
                 db.execute("INSERT INTO sessions VALUES (?, ?, ?, ?)", (session_id, user_id, when.isoformat(), (when + timedelta(seconds=duration)).isoformat()))
-                depth = rng.choices([1, 2, 3, 4, 5], weights=[12, 32, 28, 18, 10])[0]
+                weights = [8, 25, 28, 22, 17] if variant == 'treatment' else [12, 32, 28, 18, 10]
+                depth = rng.choices([1, 2, 3, 4, 5], weights=weights)[0]
                 for offset, event_type in enumerate(event_weights[:depth]):
                     event_time = when + timedelta(seconds=offset * rng.randint(25, 100))
                     db.execute("INSERT INTO events VALUES (?, ?, ?, ?, ?)", (event_id, user_id, event_type, event_time.isoformat(), session_id))

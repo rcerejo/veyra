@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import time
 import sqlite3
+import re
 
 from app.ai.ollama import OllamaClient
 from app.core.config import Settings
@@ -10,7 +11,7 @@ from app.database.sqlite import SQLiteAdapter
 from app.database.registry import DatabaseRegistry
 from app.query_engine.planner import deterministic_sql, plan_question
 from app.query_engine.semantic import plan_semantic_query
-from app.query_engine.validator import validate_sql
+from app.query_engine.validator import UnsafeQueryError, validate_sql
 from app.schemas.query import ClarificationResponse, QueryMetadata, QueryRequest, QueryResponse
 
 
@@ -21,6 +22,8 @@ class QueryService:
         self.ollama = OllamaClient(settings.ollama_url, settings.ollama_model)
 
     async def ask(self, request: QueryRequest) -> QueryResponse | ClarificationResponse:
+        if re.match(r'^\s*(delete|drop|update|insert|alter|truncate)\b',request.question,re.IGNORECASE):
+            return ClarificationResponse(question=request.question,message='VEYRA supports read-only analysis. Data modification requests cannot be executed.',suggestions=[])
         started = time.perf_counter()
         catalog = SchemaCatalog(self.adapter.discover_schema(), self.adapter.profile_values())
         sql = deterministic_sql(request.question)
