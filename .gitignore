@@ -12,6 +12,9 @@ frontend/dist/
 frontend/vite.config.js
 frontend/vite.config.d.ts
 .env
+.env.*
+!.env.example
+!.env.production.example
 .veyra-runtime.json
 logs/
 datasets/*.db

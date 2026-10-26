@@ -4,6 +4,7 @@ import sqlite3
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import Settings, get_settings
 from app.database.schema import SchemaCatalog
@@ -177,13 +178,26 @@ async def upload_database(
     settings: Settings = Depends(get_settings),
 ) -> DatabaseInfo:
     content_length = request.headers.get("content-length")
-    if content_length and int(content_length) > MAX_DATABASE_BYTES:
-        raise HTTPException(status_code=413, detail="Database exceeds the 100 MB upload limit")
-    content = await request.body()
+    if content_length:
+        try:
+            declared=int(content_length)
+            if declared<0:
+                raise ValueError
+        except ValueError as exc:
+            raise HTTPException(status_code=400,detail='Invalid Content-Length') from exc
+        if declared>MAX_DATABASE_BYTES:
+            raise HTTPException(status_code=413, detail="Database exceeds the 100 MB upload limit")
+    content=bytearray()
+    async for chunk in request.stream():
+        if len(content)+len(chunk)>MAX_DATABASE_BYTES:
+            raise HTTPException(status_code=413,detail='Database exceeds the 100 MB upload limit')
+        content.extend(chunk)
     registry = DatabaseRegistry(settings.database_path)
     try:
-        path = registry.upload(filename, content)
-        active = registry.activate(path.relative_to(registry.root).as_posix())
+        def register_upload():
+            path = registry.upload(filename, content)
+            return registry.activate(path.relative_to(registry.root).as_posix())
+        active = await run_in_threadpool(register_upload)
     except DatabaseRegistryError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return DatabaseInfo(name=active.relative_to(registry.root).as_posix(), size_bytes=active.stat().st_size, active=True)

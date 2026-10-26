@@ -106,6 +106,8 @@ API documentation is available at `http://127.0.0.1:8000/docs` while the backend
 
 ## Known limitations
 
+Public deployment is not currently approved. See [production readiness](docs/production-readiness.md) for the blockers, implemented safeguards and private-workspace deployment contract. Production mode requires an authenticated gateway and a server-held key; that key must never be included in browser code.
+
 - Deterministic offline language coverage is intentionally small; the schema and sampled values enrich Ollama's generic query context.
 - Phase 1 validates tables but does not yet perform full semantic column lineage for every SQL expression.
 - SQLite is the only database adapter implemented.

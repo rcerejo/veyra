@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 import sqlite3
 import re
+from starlette.concurrency import run_in_threadpool
 
 from app.ai.ollama import OllamaClient
 from app.core.config import Settings
@@ -25,7 +26,9 @@ class QueryService:
         if re.match(r'^\s*(delete|drop|update|insert|alter|truncate)\b',request.question,re.IGNORECASE):
             return ClarificationResponse(question=request.question,message='VEYRA supports read-only analysis. Data modification requests cannot be executed.',suggestions=[])
         started = time.perf_counter()
-        catalog = SchemaCatalog(self.adapter.discover_schema(), self.adapter.profile_values())
+        def discover_catalog():
+            return SchemaCatalog(self.adapter.discover_schema(), self.adapter.profile_values())
+        catalog = await run_in_threadpool(discover_catalog)
         sql = deterministic_sql(request.question)
         if sql is not None:
             plan = plan_question(request.question)
@@ -55,8 +58,8 @@ class QueryService:
         while True:
             try:
                 validated = validate_sql(sql, catalog)
-                columns, rows, truncated = self.adapter.execute_readonly(
-                    validated, self.settings.max_result_rows, self.settings.query_timeout_seconds
+                columns, rows, truncated = await run_in_threadpool(
+                    self.adapter.execute_readonly, validated, self.settings.max_result_rows, self.settings.query_timeout_seconds
                 )
                 break
             except (UnsafeQueryError, sqlite3.Error) as exc:

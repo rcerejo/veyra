@@ -3,6 +3,11 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from contextlib import closing
+import os
+import sqlite3
+import tempfile
+import time
 
 
 SQLITE_HEADER = b"SQLite format 3\x00"
@@ -61,7 +66,15 @@ class DatabaseRegistry:
         path = self._resolve(name, require_exists=True)
         self._validate_file(path)
         self.root.mkdir(parents=True, exist_ok=True)
-        self.marker.write_text(path.relative_to(self.root).as_posix(), encoding="utf-8")
+        fd,temporary=tempfile.mkstemp(prefix='.active-',dir=self.root)
+        try:
+            with os.fdopen(fd,'w',encoding='utf-8') as handle:
+                handle.write(path.relative_to(self.root).as_posix())
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary,self.marker)
+        finally:
+            Path(temporary).unlink(missing_ok=True)
         return path
 
     def upload(self, filename: str, content: bytes) -> Path:
@@ -77,11 +90,19 @@ class DatabaseRegistry:
         self.uploads.mkdir(parents=True, exist_ok=True)
         target = self.uploads / f"{stem}{suffix}"
         counter = 2
-        while target.exists():
-            target = self.uploads / f"{stem}-{counter}{suffix}"
-            counter += 1
-        target.write_bytes(content)
-        self._validate_file(target)
+        while True:
+            try:
+                with target.open('xb') as handle:
+                    handle.write(content)
+                break
+            except FileExistsError:
+                target=self.uploads/f'{stem}-{counter}{suffix}'
+                counter+=1
+        try:
+            self._validate_file(target)
+        except Exception:
+            target.unlink(missing_ok=True)
+            raise
         return target
 
     def _resolve(self, name: str, require_exists: bool) -> Path:
@@ -105,4 +126,14 @@ class DatabaseRegistry:
             raise DatabaseRegistryError(f"Unable to read database: {exc}") from exc
         if header != SQLITE_HEADER:
             raise DatabaseRegistryError("The selected file is not a valid SQLite database")
+        try:
+            with closing(sqlite3.connect(path.resolve().as_uri()+'?mode=ro',uri=True,timeout=2)) as connection:
+                connection.execute('PRAGMA trusted_schema=OFF')
+                deadline=time.monotonic()+3
+                connection.set_progress_handler(lambda:int(time.monotonic()>deadline),1000)
+                checked=connection.execute('PRAGMA quick_check(1)').fetchone()
+                if not checked or checked[0]!='ok':
+                    raise DatabaseRegistryError('SQLite integrity validation failed')
+        except sqlite3.Error as exc:
+            raise DatabaseRegistryError('The database is corrupt, unsupported, or could not be validated in time') from exc
 

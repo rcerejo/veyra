@@ -1,0 +1,12 @@
+.git
+.venv
+**/node_modules
+**/.test-tmp-*
+**/__pycache__
+**/.pytest_cache
+datasets
+logs
+.env
+.env.*
+.veyra-runtime.json
+frontend/dist

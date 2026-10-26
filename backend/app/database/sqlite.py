@@ -4,6 +4,7 @@ import sqlite3
 import time
 from pathlib import Path
 from typing import Any
+from contextlib import closing
 
 from app.database.adapter import ColumnInfo, DatabaseAdapter, ForeignKeyInfo, TableInfo
 
@@ -23,13 +24,19 @@ class SQLiteAdapter(DatabaseAdapter):
     def _connect(self) -> sqlite3.Connection:
         if not self._path.is_file():
             raise FileNotFoundError(f"Database not found: {self._path}")
-        connection = sqlite3.connect(f"file:{self._path.as_posix()}?mode=ro", uri=True)
+        connection = sqlite3.connect(f"{self._path.as_uri()}?mode=ro", uri=True,timeout=2)
         connection.row_factory = sqlite3.Row
         connection.execute("PRAGMA query_only = ON")
+        connection.execute('PRAGMA trusted_schema = OFF')
+        connection.enable_load_extension(False)
+        connection.setlimit(sqlite3.SQLITE_LIMIT_LENGTH,2*1024*1024)
+        connection.setlimit(sqlite3.SQLITE_LIMIT_SQL_LENGTH,1024*1024)
+        deadline=time.monotonic()+8
+        connection.set_progress_handler(lambda: int(time.monotonic()>deadline),1000)
         return connection
 
     def discover_schema(self) -> tuple[TableInfo, ...]:
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             names = [row[0] for row in connection.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
             )]
@@ -53,7 +60,7 @@ class SQLiteAdapter(DatabaseAdapter):
         inspected = 0
         sensitive_terms = ("email", "name", "address", "phone", "token", "password", "secret", "key")
         categorical_terms = ("type", "status", "category", "channel", "country", "device", "variant", "plan", "tier", "action")
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             for table in self.discover_schema():
                 table_profile: dict[str, list[Any]] = {}
                 for column in table.columns:
@@ -92,7 +99,7 @@ class SQLiteAdapter(DatabaseAdapter):
             sqlite3.SQLITE_ATTACH, sqlite3.SQLITE_DETACH, sqlite3.SQLITE_PRAGMA,
             sqlite3.SQLITE_CREATE_TABLE, sqlite3.SQLITE_CREATE_INDEX,
         }
-        with self._connect() as connection:
+        with closing(self._connect()) as connection:
             connection.set_authorizer(lambda action, *_: sqlite3.SQLITE_DENY if action in denied else sqlite3.SQLITE_OK)
 
             def progress() -> int:
@@ -101,13 +108,20 @@ class SQLiteAdapter(DatabaseAdapter):
             connection.set_progress_handler(progress, 1000)
             try:
                 cursor = connection.execute(sql)
-                raw_rows = cursor.fetchmany(row_limit + 1)
+                rows=[]
+                output_bytes=0
+                truncated=False
+                for row in cursor:
+                    size=sum(len(value) if isinstance(value,bytes) else len(str(value).encode('utf-8')) for value in row)
+                    if len(rows)>=row_limit or output_bytes+size>16*1024*1024:
+                        truncated=True
+                        break
+                    output_bytes+=size
+                    rows.append(dict(row))
             except sqlite3.OperationalError as exc:
                 if "interrupted" in str(exc).lower():
                     raise QueryTimeoutError("Query exceeded the execution time limit") from exc
                 raise
             columns = [description[0] for description in cursor.description or []]
-            truncated = len(raw_rows) > row_limit
-            rows = [dict(row) for row in raw_rows[:row_limit]]
             return columns, rows, truncated
 
