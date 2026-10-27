@@ -1,5 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
-import { Activity, BarChart3, Beaker, Bot, ChevronDown, FlaskConical, LayoutDashboard, Network, Search, Settings, ShieldCheck } from 'lucide-react'
+import { Activity, BarChart3, Beaker, Bot, FlaskConical, LayoutDashboard, Network, Search, Settings, ShieldCheck } from 'lucide-react'
 const AskVeyra = lazy(() => import('./pages/AskVeyra').then(module => ({ default: module.AskVeyra })))
 const SchemaExplorer = lazy(() => import('./pages/SchemaExplorer').then(module => ({ default: module.SchemaExplorer })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then(module => ({ default: module.SettingsPage })))
@@ -11,6 +11,7 @@ const Evaluation = lazy(() => import('./pages/Evaluation').then(module => ({ def
 import { api } from './services/api'
 import type { Health } from './types/api'
 import { StatusPill } from './components/StatusPill'
+import { WorkspaceBoundary } from './components/WorkspaceBoundary'
 
 const navigation = [
   ['Overview', LayoutDashboard], ['Ask Veyra', Bot], ['Product Analytics', BarChart3], ['Experimentation Lab', FlaskConical],
@@ -27,10 +28,13 @@ export default function App() {
     <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-white/[0.07] bg-[#0d1526] md:flex md:flex-col">
       <div className="border-b border-white/[0.07] px-6 py-6"><div className="text-2xl font-bold tracking-[-0.05em] text-white">veyra<span className="text-accent">.</span></div><div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-slate-600">Intelligence behind every decision</div></div>
       <nav className="flex-1 space-y-1 px-3 py-5">{navigation.map(([label, Icon]) => <button key={label} onClick={() => setActive(label)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${active === label ? 'bg-accent/10 text-accent' : 'text-slate-500 hover:bg-white/[0.035] hover:text-slate-200'}`}><Icon size={17}/>{label}</button>)}</nav>
-      <div className="m-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-xs text-slate-500"><div className="mb-2 flex items-center gap-2 text-slate-300"><ShieldCheck size={15} className="text-emerald-400"/> Local-first</div>Your data stays on this machine.</div>
+      <div className="m-3 rounded-xl border border-white/[0.07] bg-white/[0.02] p-3 text-xs text-slate-500"><div className="mb-2 flex items-center gap-2 text-slate-300"><ShieldCheck size={15} className="text-emerald-400"/> Local workspace · preview</div>Files are stored locally. Model requests use your configured endpoint. Do not expose this app publicly.</div>
     </aside>
-    <div className="md:pl-64"><header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-white/[0.07] bg-ink/90 px-6 backdrop-blur lg:px-10"><button className="flex items-center gap-2 text-sm text-slate-300"><span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-xs font-bold text-accent">V</span> Product Demo <ChevronDown size={13} className="text-slate-600"/></button><div className="flex items-center gap-2"><StatusPill active={health?.database.connected ?? false} label={health?.database.name ?? 'Database offline'}/><StatusPill active={health?.ollama.available ?? false} label={health?.ollama.available ? health.ollama.model : 'Offline mode'}/></div></header>
-      <Suspense fallback={<p className="p-10 text-slate-400">Loading workspace…</p>}>{active === 'Overview' ? <Overview/> : active === 'Evaluation' ? <Evaluation/> : active === 'Investigations' ? <Investigations/> : active === 'Experimentation Lab' ? <ExperimentationLab/> : active === 'Ask Veyra' ? <AskVeyra/> : active === 'Product Analytics' ? <ProductAnalytics/> : active === 'Schema Explorer' ? <SchemaExplorer/> : active === 'Settings' ? <SettingsPage onDatabaseChanged={refreshHealth}/> : <Empty title={active} description="This workspace is intentionally reserved for a later VEYRA phase." icon={<Activity/>}/>}</Suspense>
+    <div className="md:pl-64"><header className="sticky top-0 z-10 flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] bg-ink/90 px-6 py-3 backdrop-blur lg:px-10"><button onClick={() => setActive('Settings')} className="flex items-center gap-2 text-sm text-slate-300"><span className="grid h-7 w-7 place-items-center rounded-md bg-accent/15 text-xs font-bold text-accent">V</span> Local workspace · Settings</button><div className="flex flex-wrap items-center gap-2"><StatusPill active={health?.database.connected ?? false} label={health?.database.name ?? 'Database unavailable'}/><StatusPill active={health?.ollama.available ?? false} label={health?.ollama.available ? health.ollama.model : 'Model unavailable · offline queries'}/><button onClick={refreshHealth} className="text-xs text-accent">Refresh status</button></div></header>
+      {!health && <div role="status" className="border-b border-amber-400/20 px-6 py-3 text-sm text-amber-200">Checking connection or unable to reach the backend. Keep the launcher terminal open, then refresh status.</div>}
+      <WorkspaceBoundary key={active}>
+      <Suspense fallback={<p role="status" className="p-10 text-slate-400">Loading workspace…</p>}>{active === 'Overview' ? <Overview/> : active === 'Evaluation' ? <Evaluation/> : active === 'Investigations' ? <Investigations/> : active === 'Experimentation Lab' ? <ExperimentationLab/> : active === 'Ask Veyra' ? <AskVeyra onNavigate={setActive}/> : active === 'Product Analytics' ? <ProductAnalytics/> : active === 'Schema Explorer' ? <SchemaExplorer/> : active === 'Settings' ? <SettingsPage onDatabaseChanged={refreshHealth}/> : <Empty title={active} description="This workspace is intentionally reserved for a later VEYRA phase." icon={<Activity/>}/>}</Suspense>
+      </WorkspaceBoundary>
     </div>
   </div>
 }

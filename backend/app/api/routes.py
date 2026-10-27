@@ -14,7 +14,8 @@ from app.metrics.activity import ACTIVITY_DEFINITIONS, ActivityMetricService, Me
 from app.query_engine.service import QueryService
 from app.query_engine.validator import UnsafeQueryError
 from app.schemas.query import ClarificationResponse, QueryRequest, QueryResponse
-from app.schemas.database import DatabaseInfo, DatabaseList, DatabaseSelection
+from app.schemas.database import CombineDatabases, DatabaseInfo, DatabaseList, DatabaseSelection
+from app.database.combine import DatabaseCombiner
 from app.schemas.metrics import ActivityMetrics, MetricDefinition
 from app.metrics.retention import retention
 from app.metrics.funnel import FunnelRequest, funnel
@@ -150,6 +151,30 @@ def activate_database(selection: DatabaseSelection, settings: Settings = Depends
     except DatabaseRegistryError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     return DatabaseInfo(name=active.relative_to(registry.root).as_posix(), size_bytes=active.stat().st_size, active=True)
+
+
+@router.get('/databases/schema')
+def database_source_schema(name: str = Query(min_length=1,max_length=255), settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return DatabaseCombiner(DatabaseRegistry(settings.database_path)).schema(name)
+    except DatabaseRegistryError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+@router.post('/databases/combine',status_code=201)
+def combine_databases(request: CombineDatabases, settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return DatabaseCombiner(DatabaseRegistry(settings.database_path)).create(request)
+    except DatabaseRegistryError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
+
+
+@router.get('/databases/provenance')
+def database_provenance(name: str = Query(min_length=1,max_length=255), settings: Settings = Depends(get_settings)) -> dict:
+    try:
+        return DatabaseCombiner(DatabaseRegistry(settings.database_path)).provenance(name)
+    except DatabaseRegistryError as exc:
+        raise HTTPException(status_code=422,detail=str(exc)) from exc
 
 
 @router.get("/metrics/definitions", response_model=list[MetricDefinition])

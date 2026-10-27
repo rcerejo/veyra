@@ -50,10 +50,14 @@ class DatabaseRegistry:
             return []
         results: list[RegisteredDatabase] = []
         for path in sorted(self.root.rglob("*")):
+            if any(part.startswith('.veyra-combine-') for part in path.relative_to(self.root).parts):
+                continue
             if not path.is_file() or path.suffix.casefold() not in ALLOWED_SUFFIXES:
                 continue
             resolved = path.resolve()
             if not resolved.is_relative_to(self.root):
+                continue
+            if any(part.startswith('.veyra-combine-') for part in resolved.relative_to(self.root).parts):
                 continue
             results.append(RegisteredDatabase(
                 name=resolved.relative_to(self.root).as_posix(),
@@ -61,6 +65,14 @@ class DatabaseRegistry:
                 active=resolved == active,
             ))
         return results
+
+    def resolve_source(self, name: str) -> Path:
+        """Resolve a workspace-local source without changing the active selection."""
+        path=self._resolve(name,require_exists=True)
+        if path.stat().st_size>MAX_DATABASE_BYTES:
+            raise DatabaseRegistryError('Source exceeds the 100 MB limit')
+        self._validate_file(path)
+        return path
 
     def activate(self, name: str) -> Path:
         path = self._resolve(name, require_exists=True)
@@ -111,6 +123,8 @@ class DatabaseRegistry:
         path = (self.root / Path(name)).resolve()
         if not path.is_relative_to(self.root):
             raise DatabaseRegistryError("Database path escapes the datasets directory")
+        if any(part.startswith('.veyra-combine-') for part in path.relative_to(self.root).parts):
+            raise DatabaseRegistryError('In-progress snapshots are not selectable')
         if path.suffix.casefold() not in ALLOWED_SUFFIXES:
             raise DatabaseRegistryError("Unsupported database file extension")
         if require_exists and not path.is_file():

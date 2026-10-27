@@ -41,16 +41,24 @@ class SQLiteAdapter(DatabaseAdapter):
                 "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
             )]
             tables: list[TableInfo] = []
+            infos = {name: list(connection.execute('PRAGMA table_info("' + name.replace('"', '""') + '")')) for name in names}
             for name in names:
                 quoted = name.replace('"', '""')
                 columns = tuple(
-                    ColumnInfo(row[1], row[2] or "UNKNOWN", not bool(row[3]), bool(row[5]))
-                    for row in connection.execute(f'PRAGMA table_info("{quoted}")')
+                    ColumnInfo(row[1], row[2] or "UNKNOWN", not bool(row[3]), bool(row[5]), int(row[5]))
+                    for row in infos[name]
                 )
-                foreign_keys = tuple(
-                    ForeignKeyInfo(row[3], row[2], row[4])
-                    for row in connection.execute(f'PRAGMA foreign_key_list("{quoted}")')
-                )
+                raw_keys = list(connection.execute(f'PRAGMA foreign_key_list("{quoted}")'))
+                keys = []
+                for row in raw_keys:
+                    target = row[4]
+                    if target is None:
+                        primary = sorted((c for c in infos.get(row[2], []) if c[5]), key=lambda c: c[5])
+                        width = sum(k[0] == row[0] for k in raw_keys)
+                        if len(primary) == width and row[1] < len(primary):
+                            target = primary[row[1]][1]
+                    keys.append(ForeignKeyInfo(row[3], row[2], target, int(row[0]), int(row[1])))
+                foreign_keys = tuple(keys)
                 tables.append(TableInfo(name, columns, foreign_keys))
             return tuple(tables)
 
@@ -59,7 +67,7 @@ class SQLiteAdapter(DatabaseAdapter):
         profiles: dict[str, dict[str, list[Any]]] = {}
         inspected = 0
         sensitive_terms = ("email", "name", "address", "phone", "token", "password", "secret", "key")
-        categorical_terms = ("type", "status", "category", "channel", "country", "device", "variant", "plan", "tier", "action")
+        categorical_terms = ("type", "status", "category", "channel", "country", "device", "variant", "plan", "tier", "action", "state", "stage", "role")
         with closing(self._connect()) as connection:
             for table in self.discover_schema():
                 table_profile: dict[str, list[Any]] = {}
@@ -69,7 +77,8 @@ class SQLiteAdapter(DatabaseAdapter):
                     lowered = column.name.casefold()
                     data_type = column.data_type.casefold()
                     is_text = any(token in data_type for token in ("char", "text", "clob"))
-                    if not is_text or any(term in lowered for term in sensitive_terms):
+                    category_name=lowered in {'action_name','event_name','status_name','category_name','plan_name'}
+                    if not is_text or any(term in lowered for term in sensitive_terms if term!='name') or ('name' in lowered and not category_name):
                         continue
                     if not any(term in lowered for term in categorical_terms):
                         continue
@@ -108,20 +117,23 @@ class SQLiteAdapter(DatabaseAdapter):
             connection.set_progress_handler(progress, 1000)
             try:
                 cursor = connection.execute(sql)
+                columns = [description[0] for description in cursor.description or []]
                 rows=[]
                 output_bytes=0
                 truncated=False
-                for row in cursor:
-                    size=sum(len(value) if isinstance(value,bytes) else len(str(value).encode('utf-8')) for value in row)
-                    if len(rows)>=row_limit or output_bytes+size>16*1024*1024:
-                        truncated=True
-                        break
-                    output_bytes+=size
-                    rows.append(dict(row))
+                try:
+                    for row in cursor:
+                        size=sum(len(value) if isinstance(value,bytes) else len(str(value).encode('utf-8')) for value in row)
+                        if len(rows)>=row_limit or output_bytes+size>16*1024*1024:
+                            truncated=True
+                            break
+                        output_bytes+=size
+                        rows.append(dict(row))
+                finally:
+                    cursor.close()
             except sqlite3.OperationalError as exc:
                 if "interrupted" in str(exc).lower():
                     raise QueryTimeoutError("Query exceeded the execution time limit") from exc
                 raise
-            columns = [description[0] for description in cursor.description or []]
             return columns, rows, truncated
 

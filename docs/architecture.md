@@ -12,5 +12,11 @@ The semantic planner uses lexical schema matching, sampled-value evidence, relat
 
 Failure is an expected state. When Ollama is unavailable, supported deterministic questions remain functional. Unsupported questions return a clarification response rather than invented SQL or data.
 
+The compositional path also supports bounded typed relationship-existence predicates. Participation and absence compile to correlated EXISTS/NOT EXISTS rather than fanout-prone outer joins. The inner path uses explicit foreign keys, retains composite correlations, and withholds ambiguous roles, competing paths and ungrounded conditions. SQLGlot coverage checks include the complete subquery. See [existence increment and measured development results](existence-planner-v1.md).
+
 Product metrics use a separate deterministic path. Each definition names its formula and required fields, and the activity service emits DAU, WAU, and MAU on UTC calendar boundaries plus windowed session metrics. An uploaded database that lacks the canonical product fields receives a compatibility error; VEYRA does not ask a model to invent mappings for trusted metrics.
+
+## In-app source combination
+
+`DatabaseCombiner` adds a bounded source-inspection/materialization path, separate from read-only query execution. Explicit cross-source keys become validated FKs in a new namespaced SQLite snapshot, with creation provenance; activation is a separate existing registry operation. Source DBs and query ATTACH/write restrictions are unchanged. See [multi-source snapshots](multi-source-snapshots.md) for API/UI contracts, limits and tests. This is not live federation, automatic semantic mapping or tenant isolation.
 

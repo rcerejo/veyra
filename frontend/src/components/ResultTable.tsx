@@ -17,7 +17,7 @@ export function ResultTable({ columns, rows }: Props) {
       <thead className="bg-white/[0.04] text-[11px] uppercase tracking-[0.12em] text-slate-400"><tr>
         {columns.map(column => <th className="px-4 py-3 font-medium" key={column}>{column.replaceAll('_', ' ')}</th>)}
       </tr></thead>
-      <tbody className="divide-y divide-white/[0.06]">{rows.map((row, index) => <tr className="text-slate-200 transition hover:bg-white/[0.025]" key={index}>
+      <tbody className="divide-y divide-white/[0.06]">{rows.length === 0 && <tr><td colSpan={Math.max(columns.length, 1)} className="px-4 py-6 text-sm text-slate-400">No rows matched this query. Check the filters and date window; this is not a connection error.</td></tr>}{rows.map((row, index) => <tr className="text-slate-200 transition hover:bg-white/[0.025]" key={index}>
         {columns.map(column => <td className="whitespace-nowrap px-4 py-3 font-mono text-xs" key={column}>{typeof row[column] === 'number' ? new Intl.NumberFormat(undefined,{maximumFractionDigits:4}).format(row[column] as number) : String(row[column] ?? '—')}</td>)}
       </tr>)}</tbody>
     </table></div>

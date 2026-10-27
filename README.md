@@ -4,6 +4,8 @@
 
 VEYRA is a project you run on your own computer. It includes a reproducible demo database, a React interface, and a FastAPI backend. No paid API key or cloud account is required. Ollama is optional; supported queries and analytical modules work without it.
 
+**Release scope: single-person local preview.** Start with the [first-session guide](docs/local-preview-guide.md) for importing data, interpreting results and understanding privacy boundaries. This is not approved for public multi-user hosting, and SQL safety checks do not guarantee a correct business interpretation.
+
 ## Prerequisites
 
 - Python **3.12** (the pinned backend environment is tested with this version).
@@ -112,7 +114,29 @@ The report filename must not already exist. Add `--include-models` to measure av
 
 ## Scope and documentation
 
+To test unfamiliar schemas and prepare verified model examples, see [dataset generation and learning](docs/dataset-learning.md). This includes five synthetic databases, 32 diagnostic cases, and schema-family-separated example exports; no model training is required.
+
+The reliability work is tracked in the [incremental implementation plan](docs/improvement-plan.md). See the [benchmark audit](docs/evaluation-audit.md) and [independent 108-case evaluation methodology](docs/independent-evaluation.md) for new structurally different fixtures, strict system comparisons and evaluation-exposure limitations.
+
+The [108-case failure analysis](docs/failure-analysis-v1.md) documents confirmed causes, evaluation weaknesses and the proposed next changes. Those reviewed cases are now development-exposed, not an untouched final test set.
+
+The [first compositional planner increment](docs/compositional-planner-v1.md) implements structured filters/groupings, foreign-key normalization and SQL coverage checks. It reports development improvements, regressions, supported operations and a separately reserved, unscored final artifact.
+
+The [relationship-existence increment](docs/existence-planner-v1.md) adds bounded correlated EXISTS/NOT EXISTS, improving development exact results from 48/90 to 57/90 with no previous-pass regressions. The reserved final archive remains unopened and unscored.
+
+The [temporal and distinct-activity increments](docs/temporal-activity-increments.md) add validated timestamp relationships and distinct observed identities, reaching 64/90 exact development results and 82/108 overall outcomes with no previous-pass regressions. The report documents UTC/NULL semantics, tests, and remaining unsupported operations; these are not held-out results.
+
+Additional [synthetic stress testing](docs/synthetic-stress-v1.md) runs 90 new question formulations against paired rental, support and billing fixtures. It exposes five wrong-answer formulations not caught by the original suite; no planner changes or held-out claims are made by that testing increment.
+
+The subsequent [interpretation-grounding fixes](docs/interpretation-grounding-v1.md) correct those five wrong-answer formulations and three distinct-ID clarifications per variant: 50/78 exact synthetic results, with no previous-pass regressions. A [dataset context brief](docs/dataset-context-template.md) explains what definitions and mappings an analyst can provide; it is not yet an automatically applied semantic-layer configuration.
+
+The [two-source context demo](docs/joined-context-demo.md) provides synthetic CRM/product databases, a combined upload-ready snapshot, a completed context brief and recorded query results. It tests joins inside one snapshot, not two-file federation or automatic context ingestion, and documents a newly exposed UTC-boundary error.
+
+You can now [combine 2–5 uploaded SQLite sources inside Settings](docs/multi-source-snapshots.md): explicitly map cross-source keys, create/review a new namespaced snapshot, then connect it for queries. Sources stay unchanged. This is a static snapshot, not live federation or automatic semantic-context ingestion.
+
 SQLite is the implemented database adapter. Metrics use UTC and explicit definitions. Investigations are descriptive, not causal proof. Predictive scores are historical synthetic-data evaluations, not evidence of real-product forecasting quality.
+
+The [corrected-query stress report](docs/corrected-query-testing-v1.md) documents 400 development case executions, numeric field-binding and punctuation fixes, unchanged-denominator measurements and remaining unsupported wording.
 
 See [architecture](docs/architecture.md), [schema](docs/database-schema.md), [metrics](docs/metrics.md), [experimentation](docs/experimentation.md), [investigations](docs/investigations.md), [evaluation](docs/evaluation.md), and [release status](docs/release-status.md).
 

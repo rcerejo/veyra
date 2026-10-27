@@ -12,13 +12,16 @@ class ColumnInfo:
     data_type: str
     nullable: bool
     primary_key: bool
+    primary_key_position: int = 0
 
 
 @dataclass(frozen=True)
 class ForeignKeyInfo:
     column: str
     target_table: str
-    target_column: str
+    target_column: str | None
+    constraint_id: int = 0
+    sequence: int = 0
 
 
 @dataclass(frozen=True)

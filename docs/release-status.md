@@ -2,10 +2,13 @@
 
 This is a runnable local product-intelligence prototype, not a completed implementation of every item in the original master outline.
 
+The [local-preview guide](local-preview-guide.md) covers the user-facing onboarding pass: schema-derived starter questions, import/privacy guidance, view recovery, clearer technical-validation labels, empty/partial results and offline SQL inspection. This is a local preview, not a public deployment certification. Browser interaction and responsive/accessibility acceptance remain manual release gates.
+
 ## Implemented
 
 - Natural-language SQLite querying, schema/value discovery, explicit FK joins, safety validation and bounded model correction
 - Database upload/selection and schema explorer
+- Explicit in-app multi-source SQLite snapshots with source provenance; not live federation or automatic metric mappings
 - Engagement, exact-day signup retention, ordered conversion funnels
 - Conversion experimentation, assignment diagnostics, relative/absolute effects, z-tests, Welch session guardrails and planning calculator
 - Composition-aware conversion investigations

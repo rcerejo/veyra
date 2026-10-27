@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlite3
+from contextlib import closing
 from pathlib import Path
 
 import pytest
@@ -13,7 +14,7 @@ from app.main import app
 @pytest.fixture
 def database(tmp_path: Path) -> Path:
     path = tmp_path / "test.db"
-    with sqlite3.connect(path) as connection:
+    with closing(sqlite3.connect(path)) as connection:
         connection.executescript("""
             CREATE TABLE users (user_id INTEGER PRIMARY KEY, signup_date TEXT NOT NULL, acquisition_channel TEXT, country TEXT, device_type TEXT);
             CREATE TABLE events (event_id INTEGER PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(user_id), event_type TEXT, event_timestamp TEXT, session_id INTEGER);
@@ -22,6 +23,7 @@ def database(tmp_path: Path) -> Path:
             INSERT INTO events VALUES (1, 1, 'app_open', '2026-01-03T10:00:00', 1), (2, 2, 'app_open', '2026-01-03T11:00:00', 2), (3, 1, 'app_open', '2026-01-04T10:00:00', 3);
             INSERT INTO sessions VALUES (1, 1, '2026-01-03T10:00:00', '2026-01-03T10:10:00'), (2, 2, '2026-01-03T11:00:00', '2026-01-03T11:20:00'), (3, 1, '2026-01-04T10:00:00', '2026-01-04T10:30:00');
         """)
+        connection.commit()
     return path
 
 

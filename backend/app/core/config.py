@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ['http://localhost:5173','http://127.0.0.1:5173']
     max_concurrent_requests: int = Field(default=4,ge=1,le=64)
     enable_admin_jobs: bool = False
+    sql_examples_path: Path | None = None
+    prefer_model_sql: bool = False
+
+    @field_validator('sql_examples_path',mode='before')
+    @classmethod
+    def resolve_examples_path(cls,value):
+        if not value:
+            return None
+        path=Path(value)
+        return path if path.is_absolute() else Path(__file__).resolve().parents[3]/path
 
     @field_validator('database_path',mode='before')
     @classmethod

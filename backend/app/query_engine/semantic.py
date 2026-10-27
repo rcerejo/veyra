@@ -99,6 +99,9 @@ def _table_scores(question: str, catalog: SchemaCatalog) -> tuple[dict[str, int]
     filters: list[tuple[str, str, object]] = []
     for table in catalog.tables.values():
         table_tokens = _tokens(table.name)
+        generic={'record','row','data','entry'}
+        if table_tokens and table_tokens<=generic and any((_tokens(other.name)-generic)&(subject_tokens-generic) for other in catalog.tables.values() if other.name!=table.name):
+            continue
         table_phrase = " ".join(re.findall(r"[a-z0-9]+", table.name.casefold().replace("_", " ")))
         if table_phrase and table_phrase in normalized_question:
             scores[table.name] += 30
@@ -118,7 +121,7 @@ def _table_scores(question: str, catalog: SchemaCatalog) -> tuple[dict[str, int]
             for value in values:
                 value_tokens = _tokens(str(value))
                 value_phrase = " ".join(re.findall(r"[a-z0-9]+", str(value).casefold().replace("_", " ")))
-                if value_tokens and (value_tokens <= question_tokens or value_phrase in normalized_question):
+                if value_tokens and value_tokens <= subject_tokens:
                     scores[table.name] += 12
                     filters.append((table.name, column, value))
                     break
@@ -167,9 +170,17 @@ def _join_sql(catalog: SchemaCatalog, path: list[str]) -> str:
         forward = next((key for key in left_table.foreign_keys if key.target_table == right), None)
         reverse = next((key for key in right_table.foreign_keys if key.target_table == left), None)
         if forward:
-            joins.append(f"JOIN {_quote(right)} ON {_qualified(left, forward.column)} = {_qualified(right, forward.target_column)}")
+            keys = [k for k in left_table.foreign_keys if k.constraint_id == forward.constraint_id and k.target_table == right]
+            if any(k.target_column is None for k in keys):
+                raise ValueError('Foreign key target cannot be resolved to a declared primary key')
+            predicate = ' AND '.join(f'{_qualified(left,k.column)} = {_qualified(right,k.target_column)}' for k in keys)
+            joins.append(f"JOIN {_quote(right)} ON {predicate}")
         elif reverse:
-            joins.append(f"JOIN {_quote(right)} ON {_qualified(right, reverse.column)} = {_qualified(left, reverse.target_column)}")
+            keys = [k for k in right_table.foreign_keys if k.constraint_id == reverse.constraint_id and k.target_table == left]
+            if any(k.target_column is None for k in keys):
+                raise ValueError('Foreign key target cannot be resolved to a declared primary key')
+            predicate = ' AND '.join(f'{_qualified(right,k.column)} = {_qualified(left,k.target_column)}' for k in keys)
+            joins.append(f"JOIN {_quote(right)} ON {predicate}")
         else:
             raise ValueError(f"No explicit relationship between {left} and {right}")
     return " ".join(joins)
@@ -177,6 +188,8 @@ def _join_sql(catalog: SchemaCatalog, path: list[str]) -> str:
 
 def plan_semantic_query(question: str, catalog: SchemaCatalog) -> SemanticResult:
     text = question.casefold().strip()
+    if re.search(r'\b(retention|churn|churned|activation|funnel)\b|\b(?:daily|weekly|monthly) active users\b',text):
+        return SemanticResult(plan=QueryPlan(intent='unknown'),clarification='This analytical metric needs a confirmed definition and mappings for entities, activity and dates in this dataset. Please configure those meanings before calculating it.',suggestions=[])
     scores, detected_filters = _table_scores(text, catalog)
     dimension = _find_dimension(text, catalog)
     ranked = sorted(scores.items(), key=lambda item: (-item[1], item[0]))

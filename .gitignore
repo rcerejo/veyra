@@ -20,5 +20,10 @@ logs/
 datasets/*.db
 datasets/.active_database
 datasets/uploads/
+datasets/test-packs/
+datasets/evaluation/
+datasets/independent-v1*/
+evaluations/*.zip
+evaluations/*.receipt.json
 !datasets/.gitkeep
 

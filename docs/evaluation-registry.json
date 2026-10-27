@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "suites": {
+    "23a2873657791900da349b4076ad67e7e6b918454514456828316ba6e27e35fc": {
+      "name": "literal-collision-probes-v1-seed23",
+      "role": "development",
+      "exposure": "development-exposed-neighboring-query-diagnostics",
+      "reason": "Contrastive numeric/text binding and punctuation probes, reusing corrected-matrix source data. Authored for diagnostics; not held-out.",
+      "final_evaluation_eligible": false
+    },
+    "d94e8151ec99b1b35f989c8b6e00b9ec65fce42a20f40718da28172ef578a48d": {
+      "name": "literal-collision-probes-v1-seed59",
+      "role": "development",
+      "exposure": "development-exposed-neighboring-query-diagnostics",
+      "reason": "Second data variant repeats contrastive questions; not independent linguistic cases or held-out evaluation.",
+      "final_evaluation_eligible": false
+    },
+    "ae3886fe5397ac55ea810612bd3d8340376027984921cf53e93523bd7b452c54": {
+      "name": "corrected-query-matrix-v1-seed23",
+      "role": "development",
+      "exposure": "development-exposed-neighboring-query-diagnostics",
+      "reason": "Four renamed role/type families, corrected controls and nearby phrasings. Authored for development diagnostics, not held-out.",
+      "final_evaluation_eligible": false
+    },
+    "fad16696e812086f69c953c2cd9e0b02a90e02c4940a82f3348f0d9b20a95e16": {
+      "name": "corrected-query-matrix-v1-seed59",
+      "role": "development",
+      "exposure": "development-exposed-neighboring-query-diagnostics",
+      "reason": "Second data variant repeats the same questions; does not add independent linguistic diversity or held-out evidence.",
+      "final_evaluation_eligible": false
+    },
+    "8d5630c9ebaae3e371b43e0773d302d6af853e212bdf72040f0ec368283da487": {
+      "name": "joined-context-demo-v1-reviewed",
+      "role": "development",
+      "exposure": "development-exposed-context-diagnostics",
+      "reason": "Context revision 2 clarifies the daily anonymous/sparse-bucket policy after reviewing revision 1. Raw and explicit wording differ; no automatic context ingestion or held-out claim. Original snapshot preserved.",
+      "final_evaluation_eligible": false
+    },
+    "77c26fe4f956bf4504d6671ad2c26b570951b7444cdc2c19e749541bacc493f8": {
+      "name": "joined-context-demo-v1",
+      "role": "development",
+      "exposure": "development-exposed-context-diagnostics",
+      "reason": "Synthetic CRM/product source snapshots combined for explicit-FK joins. Context is a recorded human brief, not automatically ingested. Raw and explicit wording have different information and label denominators; not a held-out or context-feature improvement benchmark.",
+      "final_evaluation_eligible": false
+    },
+    "d59b253f2494f61f5d0ac743ccec85fe373d869502ed4061e53c6ca58e5917c2": {
+      "name": "synthetic-stress-v1-seed11",
+      "role": "development",
+      "exposure": "development-exposed-authored-for-diagnostics",
+      "reason": "New synthetic rental, support and billing diagnostics, authored and reviewed during development. Not held-out or external blind.",
+      "final_evaluation_eligible": false
+    },
+    "fa68ba0859cb6da3e0fe5acb2b9e2329e898cbb2b37872328064acab236388d3": {
+      "name": "synthetic-stress-v1-seed29",
+      "role": "development",
+      "exposure": "development-exposed-authored-for-diagnostics",
+      "reason": "Paired data variant of the same questions and schemas; not 90 additional independent linguistic cases and not held-out.",
+      "final_evaluation_eligible": false
+    },
+    "9bcbeaa7cbbc125d0f9e59f72a8f00d0070755a3a20e705246deee99b06cfaab": {
+      "name": "independent-v1",
+      "role": "development",
+      "exposure": "development-exposed-full-case-failure-review",
+      "reason": "All 108 questions, references and outcomes were reviewed for failure analysis at the user's explicit request. Not eligible for future held-out claims.",
+      "historical_baseline": "logs/independent-v1-deterministic.json",
+      "query_exact_correct": 22,
+      "query_total": 90,
+      "outcome_correct": 37,
+      "outcome_total": 108,
+      "final_evaluation_eligible": false
+    }
+  },
+  "prior_suites": {
+    "canonical-58": {"role": "development", "final_evaluation_eligible": false},
+    "cross-schema-32": {"role": "development", "final_evaluation_eligible": false}
+  },
+  "final_set": {
+    "status": "reserved_unopened_not_scored",
+    "archive": "evaluations/reserved-final-v2.zip",
+    "receipt": "evaluations/reserved-final-v2.receipt.json",
+    "archive_sha256": "717f40669f4596735911a560c4722a8d0870e4e01d34fd4ee42d761319ac7368",
+    "manifest_sha256": "3441966a3267f1e72b68e29f451fad7ce464f2cdacadab876f2f3e1a858571bf",
+    "production_source_sha256": "ada395bc800db09000ecb8357ecdfc4d37982d21c6f2b036a8f1a4f790b5f32a",
+    "production_changed_since_reservation": true,
+    "post_reservation_development": "Bounded EXISTS/NOT EXISTS, temporal relationship predicates, distinct observed activity, interpretation-grounding fixes and in-app multi-source snapshot combination, documented in docs/existence-planner-v1.md, docs/temporal-activity-increments.md, docs/interpretation-grounding-v1.md and docs/multi-source-snapshots.md. Archive and receipts were not opened, scored, regenerated or used for development. Record a fresh implementation/prompt freeze before final release.",
+    "retired_unopened_archive": "evaluations/reserved-final-v1.zip",
+    "case_count": 36,
+    "schema_count": 2,
+    "external_blind": false,
+    "reason": "Fresh internally authored archive, answers not inspected and Veyra not scored. Not an external blind test. Do not unpack during development; require a documented code/prompt freeze and explicit release before final evaluation.",
+    "requirements": [
+      "Fresh schemas and questions, separate from all reviewed development and prompt examples",
+      "References reviewed by an independent author/custodian without planner tuning on final questions",
+      "Freeze and record hashes, metrics, model settings and acceptance criteria before final execution",
+      "Restrict final labels and case-level feedback until implementation and model prompts are frozen",
+      "Never use final failures for tuning while continuing to claim untouched performance"
+    ]
+  }
+}
